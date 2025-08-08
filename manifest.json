@@ -1,0 +1,20 @@
+{
+  "name": "Venkata Lab media \u2013 Media Scaler & Lab Calculators",
+  "short_name": "Lab Media",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#060914",
+  "theme_color": "#06b6d4",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
