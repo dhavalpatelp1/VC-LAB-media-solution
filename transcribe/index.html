@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Venkata Transcribe (Simple)</title>
+<style>
+  :root{--bg:#121212;--surf:#1e1e1e;--text:#f5f5f5;--muted:#9aa5b1;--pri:#00bcd4;--pri2:#03dac6;}
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:var(--text)}
+  header,footer{background:var(--surf);padding:12px 16px;text-align:center}
+  main{max-width:760px;margin:0 auto;padding:16px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .card{background:var(--surf);border:1px solid #2b2b2b;border-radius:10px;padding:12px;margin-top:12px}
+  .btn{border:none;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}
+  .btn.primary{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#00272c}
+  .btn.secondary{background:transparent;border:1px solid #2b2b2b;color:var(--text)}
+  #status{color:var(--pri2);margin-left:8px}
+  #transcript{min-height:220px;white-space:pre-wrap;word-wrap:break-word;padding:10px;background:#11181f;border:1px solid #2b2b2b;border-radius:10px}
+  .final{font-weight:700} .interim{opacity:.7}
+  small{color:var(--muted)}
+</style>
+</head>
+<body>
+<header><h1 style="margin:0">Transcribe (Simple)</h1></header>
+<main>
+  <div class="row">
+    <button id="startBtn" class="btn primary">Start</button>
+    <button id="stopBtn" class="btn secondary" disabled>Stop</button>
+    <select id="langSel" class="btn secondary" style="padding:10px">
+      <option value="en-US">English (US)</option>
+      <option value="en-GB">English (UK)</option>
+      <option value="en-IN">English (India)</option>
+      <option value="hi-IN">Hindi</option>
+      <option value="fr-FR">French</option>
+      <option value="de-DE">German</option>
+      <option value="es-ES">Spanish</option>
+    </select>
+    <span id="status"></span>
+  </div>
+
+  <div class="card">
+    <div id="transcript"><small>Click “Start” and allow microphone access…</small></div>
+  </div>
+
+  <div class="row" style="margin-top:12px">
+    <button id="copyBtn" class="btn secondary">Copy text</button>
+    <a id="downloadBtn" class="btn secondary" download="transcript.txt">Download .txt</a>
+  </div>
+</main>
+<footer><small>Tip: Use Chrome/Edge. Mic must be allowed (padlock icon → Site settings → Microphone).</small></footer>
+
+<script>
+(() => {
+  const statusEl = document.getElementById('status');
+  const transcriptEl = document.getElementById('transcript');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const langSel = document.getElementById('langSel');
+  const copyBtn = document.getElementById('copyBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recog = null, listening = false;
+  let finalText = "", interimText = "";
+
+  function updateTranscript() {
+    transcriptEl.innerHTML =
+      '<span class="final">' + finalText + '</span>' +
+      (interimText ? '<span class="interim">' + interimText + '</span>' : '');
+    const blob = new Blob([ (finalText + ' ' + interimText).trim() ], {type:'text/plain'});
+    downloadBtn.href = URL.createObjectURL(blob);
+  }
+
+  function init() {
+    if (!SR) {
+      statusEl.textContent = 'Your browser does not support speech recognition. Try Chrome or Edge.';
+      startBtn.disabled = true; stopBtn.disabled = true;
+      return;
+    }
+    recog = new SR();
+    recog.continuous = true;
+    recog.interimResults = true;
+    recog.lang = langSel.value;
+
+    recog.onstart = () => { statusEl.textContent = 'Listening…'; };
+    recog.onerror = (e) => { console.error(e); statusEl.textContent = 'Error: ' + e.error; };
+    recog.onend = () => {
+      listening = false;
+      startBtn.disabled = false; stopBtn.disabled = true;
+      startBtn.textContent = 'Start';
+      statusEl.textContent = 'Stopped';
+    };
+    recog.onresult = (evt) => {
+      interimText = '';
+      for (let i = evt.resultIndex; i < evt.results.length; i++) {
+        const res = evt.results[i];
+        if (res.isFinal) finalText += res[0].transcript;
+        else interimText += res[0].transcript;
+      }
+      updateTranscript();
+    };
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (!recog) init();
+    if (!recog) return;
+    try {
+      recog.lang = langSel.value;
+      recog.start();
+      listening = true;
+      startBtn.disabled = true; stopBtn.disabled = false;
+      startBtn.textContent = 'Starting…';
+      statusEl.textContent = 'Requesting mic… (allow in the browser prompt)';
+    } catch (e) {
+      console.error(e);
+      statusEl.textContent = 'Failed to start: ' + e.message;
+    }
+  });
+
+  stopBtn.addEventListener('click', () => {
+    if (recog && listening) { try { recog.stop(); } catch {} }
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    const text = (finalText + ' ' + interimText).trim();
+    try { await navigator.clipboard.writeText(text); statusEl.textContent = 'Copied!'; }
+    catch { statusEl.textContent = 'Copy failed.'; }
+    setTimeout(()=> statusEl.textContent = listening ? 'Listening…' : '', 1000);
+  });
+
+  // init once so unsupported browsers get the message immediately
+  init();
+})();
+</script>
+</body>
+</html>
