@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software in research, please cite it using the metadata below."
+title: "VC Lab Media Solution"
+type: software
+authors:
+  - family-names: Patel
+    given-names: Dhaval
+repository-code: "https://github.com/dhavalpatelp1/VC-LAB-media-solution"
+abstract: "An offline-capable laboratory calculator for scaling media recipes and performing common concentration and dilution calculations."
